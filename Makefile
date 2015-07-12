@@ -3,9 +3,10 @@ MAN=
 
 SRCS=	main.c
 
-CFLAGS+= 
+VERSION= -DVERSION=\"`git rev-parse --short HEAD`\"
+CFLAGS+= ${VERSION} -I/usr/local/include -I/usr/local/include/libdrm
 
-LDFLAGS+=
+LDFLAGS+= -ldrm -L/usr/local/lib
 
 LDADD+=
 
