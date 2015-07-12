@@ -68,6 +68,7 @@ void
 testCP(struct radeon_cs_manager *csm)
 {
 	struct radeon_cs *cs;
+	int ret;
 
 	cs = radeon_cs_create(csm, NDW);
 	if (cs == NULL) {
@@ -76,6 +77,11 @@ testCP(struct radeon_cs_manager *csm)
 	}
 
 	radeon_cs_write_dword(cs, CP_PACKET0(SCRATCH_REG7, 0xdeadbeef));
+	ret = radeon_cs_emit(cs);
+	if (ret) {
+		fprintf(stderr, "%s: emit returned %d.", __FUNCTION__, ret);
+		goto err;
+	}
 
 err:
 	if (cs != NULL) {
