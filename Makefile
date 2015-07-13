@@ -4,7 +4,7 @@ MAN=
 SRCS=	main.c
 
 VERSION= -DVERSION=\"`git rev-parse --short HEAD`\"
-CFLAGS+= ${VERSION} -I/usr/local/include -I/usr/local/include/libdrm
+CFLAGS+= -Wall ${VERSION} -I/usr/local/include -I/usr/local/include/libdrm
 
 LDFLAGS+= -ldrm -ldrm_radeon -L/usr/local/lib
 

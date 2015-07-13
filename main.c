@@ -17,7 +17,7 @@
 const char cardName[] = "/dev/dri/card0";
 
 void printDriverInfo(int);
-void testCP(struct radeon_cs_manager*);
+void testCP(int, struct radeon_cs_manager*);
 
 int 
 main (int argc, char *argv[])
@@ -28,6 +28,7 @@ main (int argc, char *argv[])
 	printf("%s, version %s\n", argv[0], VERSION);
 
 	/* our card is first */
+	csm = NULL;
 	fd = open(cardName, O_RDWR);
 	if (fd < 0) {
 		fprintf(stderr, "Cant open card: %s\n", cardName);
@@ -44,7 +45,7 @@ main (int argc, char *argv[])
 	}
 
 	/* test working CP */
-	testCP(csm);
+	testCP(fd, csm);
 
 	/* cleanup */
 	radeon_cs_manager_gem_dtor(csm);
@@ -65,10 +66,11 @@ err:
  */
 #define NDW 10
 void
-testCP(struct radeon_cs_manager *csm)
+testCP(int fd, struct radeon_cs_manager *csm)
 {
 	struct radeon_cs *cs;
-	int ret;
+	int ret, i;
+	uint32_t val;
 
 	cs = radeon_cs_create(csm, NDW);
 	if (cs == NULL) {
@@ -76,6 +78,15 @@ testCP(struct radeon_cs_manager *csm)
 		goto err;
 	}
 
+	/* Initial state of scratch reg */
+	ret = radeon_get_value(fd, SCRATCH_REG7, &val);
+	if (ret) {
+		fprintf(stderr, "%s: get value returned %d.", __FUNCTION__, ret);
+		goto err;
+	}
+	printf("SCRATCH_REG7:%08x\n", val);
+
+	/*  */
 	radeon_cs_write_dword(cs, CP_PACKET0(SCRATCH_REG7, 0xdeadbeef));
 	ret = radeon_cs_emit(cs);
 	if (ret) {
@@ -83,6 +94,10 @@ testCP(struct radeon_cs_manager *csm)
 		goto err;
 	}
 
+	for(i = 0; ret < 1000L; ++ret) {
+		radeon_get_value(fd, SCRATCH_REG7, &val);
+		printf("SCRATCH_REG7:%08x\n", val);
+	}
 err:
 	if (cs != NULL) {
 		radeon_cs_destroy(cs);
