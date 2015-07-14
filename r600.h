@@ -37,17 +37,7 @@ enum {
 #define CP_PACKET3(cmd, n)      (RADEON_CP_PACKET3 | (((n)-1)<<16) | ((cmd)<<8))
 
 /* read register */
-inline int radeon_get_value(int fd, unsigned reg, uint32_t *value)
-{
-    struct drm_radeon_info info = {};
-    int r;
-
-    *value = reg;
-    info.request = RADEON_INFO_READ_REGISTER;
-    info.value = (uintptr_t)value;
-    r = drmCommandWriteRead(fd, DRM_RADEON_INFO, &info,
-                            sizeof(struct drm_radeon_info));
-    return r;
-}
+int read_reg(int, uint32_t, uint32_t*);
+void wait_reg(int, uint32_t, uint32_t, const char*);
 #endif
 
