@@ -39,5 +39,9 @@ enum {
 /* read register */
 int read_reg(int, uint32_t, uint32_t*);
 void wait_reg(int, uint32_t, uint32_t, const char*);
+
+/* tests */
+void testCP(int, struct radeon_cs_manager*);
+void testCPDMA(int, struct radeon_cs_manager*);
 #endif
 
