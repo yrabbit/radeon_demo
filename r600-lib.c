@@ -5,6 +5,19 @@
 #include "r600_reg_auto_r6xx.h"
 #include "r600_reg_r6xx.h"
 
+void
+mk_packet3(struct radeon_cs *cs, uint32_t cmd, uint32_t val)
+{
+	radeon_cs_write_dword(cs, CP_PACKET3(cmd, val));
+}
+
+void
+mk_packet0(struct radeon_cs *cs, uint32_t reg, uint32_t val)
+{
+	radeon_cs_write_dword(cs, CP_PACKET0(reg, 1));
+	radeon_cs_write_dword(cs, val);
+}
+
 int
 read_reg(int fd, uint32_t reg, uint32_t *value)
 {

@@ -12,6 +12,7 @@
 #include "r600_reg_auto_r6xx.h"
 #include "r600_reg_r6xx.h"
 #include "r600_shader.h"
+#include "evergreend.h"
 
 extern FILE* fout;
 
@@ -43,7 +44,7 @@ test2DTri(int fd, struct radeon_cs_manager *csm)
 	radeon_cs_write_dword(cs, CP_PACKET3(INDEX_TYPE, 1));
 	radeon_cs_write_dword(cs, DI_INDEX_SIZE_16_BIT);
 
-	/* Use just one VGT DMA instance */
+	/* Use just one instance */
 	radeon_cs_write_dword(cs, CP_PACKET3(NUM_INSTANCES, 1));
 	radeon_cs_write_dword(cs, 1);
 
@@ -51,7 +52,7 @@ test2DTri(int fd, struct radeon_cs_manager *csm)
 	i = 0;
 	// 0 execute fetch through a vertex cache
 	// clause begins at offset 10 qword and consists 2 commands
-	vs[i++] = CF_DWORD0(ADDR(10));
+	vs[i++] = CF_DWORD0(ADDR(6));
 	vs[i++] = CF_DWORD1(POP_COUNT(0),
 			CF_CONST(0),
 			COND(SQ_CF_COND_ACTIVE),
@@ -119,8 +120,62 @@ test2DTri(int fd, struct radeon_cs_manager *csm)
 			CF_INST(SQ_CF_INST_EXPORT_DONE),
 			WHOLE_QUAD_MODE(0),
 			BARRIER(0));
+	// 4 ALU 0
+	//    GPR(1).X = float(GPR(0).X)
+	vs[i++] = ALU_DWORD0(SRC0_SEL(1),		
+			SRC0_REL(ABSOLUTE),
+			SRC0_ELEM(ELEM_X),
+			SRC0_NEG(0),
+			SRC1_SEL(0),
+			SRC1_REL(ABSOLUTE),
+			SRC1_ELEM(ELEM_X),
+			SRC1_NEG(0),
+			INDEX_MODE(SQ_INDEX_AR_X),
+			PRED_SEL(SQ_PRED_SEL_OFF),
+			LAST(1));
+	vs[i++] = ALU_DWORD1_OP2(CHIPSET_RV770,
+			SRC0_ABS(0),
+			SRC1_ABS(0),
+			UPDATE_EXECUTE_MASK(0),
+			UPDATE_PRED(0),
+			WRITE_MASK(1),
+			FOG_MERGE(0),
+			OMOD(SQ_ALU_OMOD_OFF),
+			ALU_INST(SQ_OP2_INST_INT_TO_FLT),
+			BANK_SWIZZLE(SQ_ALU_VEC_012),
+			DST_GPR(1),
+			DST_REL(ABSOLUTE),
+			DST_ELEM(ELEM_X),
+			CLAMP(0));
+	// 5 ALU 1
+	//    GPR(1).Y = float(GPR(0).Y)
+	vs[i++] = ALU_DWORD0(SRC0_SEL(1),
+			SRC0_REL(ABSOLUTE),
+			SRC0_ELEM(ELEM_Y),
+			SRC0_NEG(0),
+			SRC1_SEL(0),
+			SRC1_REL(ABSOLUTE),
+			SRC1_ELEM(ELEM_X),
+			SRC1_NEG(0),
+			INDEX_MODE(SQ_INDEX_AR_X),
+			PRED_SEL(SQ_PRED_SEL_OFF),
+			LAST(1));
+	vs[i++] = ALU_DWORD1_OP2(CHIPSET_RV770,
+			SRC0_ABS(0),
+			SRC1_ABS(0),
+			UPDATE_EXECUTE_MASK(0),
+			UPDATE_PRED(0),
+			WRITE_MASK(1),
+			FOG_MERGE(0),
+			OMOD(SQ_ALU_OMOD_OFF),
+			ALU_INST(SQ_OP2_INST_INT_TO_FLT),
+			BANK_SWIZZLE(SQ_ALU_VEC_012),
+			DST_GPR(1),
+			DST_REL(ABSOLUTE),
+			DST_ELEM(ELEM_Y),
+			CLAMP(0));
 
-	// 10 fetch vertex data, 12 bytes at once (x, y, color:ignored)
+	// 6 fetch vertex data, 12 bytes at once (x, y, color:ignored)
 	//    address for fetch is in GPR 0 (X element)
 	vs[i++] = VTX_DWORD0(VTX_INST(SQ_VTX_INST_FETCH),
 			FETCH_TYPE(SQ_VTX_FETCH_VERTEX_DATA),
@@ -151,7 +206,7 @@ test2DTri(int fd, struct radeon_cs_manager *csm)
 	//    junk
 	vs[i++] = VTX_DWORD_PAD;
 
-	// 11 fetch color as 8:8:8:8 at offset 8 and place it to X, Y, Z, W of GPR 2
+	// 7 fetch color as 8:8:8:8 at offset 8 and place it to X, Y, Z, W of GPR 2
 	//    as (khm) float [0,1] unsigned
 	vs[i++] = VTX_DWORD0(VTX_INST(SQ_VTX_INST_FETCH),
 			FETCH_TYPE(SQ_VTX_FETCH_VERTEX_DATA),
@@ -214,6 +269,23 @@ test2DTri(int fd, struct radeon_cs_manager *csm)
 			printf("0x%08X\n", ps[j]);
 	}
 
+	/*
+	 * Upload vertex & pixel shaders
+	 */
+	/*
+	 * Setup vertex registers
+	 */
+	/* SQ_PGM_START_VS */
+	mk_packet3(cs, IT_SET_CONTEXT_REG, 2);
+	radeon_cs_write_dword(cs, (SQ_PGM_START_VS - PACKET3_SET_CONTEXT_REG_START) >> 2);
+	radeon_cs_write_dword(cs, -1);
+	/* SQ_PGM_RESOURCE_VS */
+	/* SQ_PGM_CF_OFFSET_VS */
+	/*
+	 * Setup pixel registers
+	 */
+	radeon_cs_print(cs, fout);
+	 
 err:	
 	;
 }

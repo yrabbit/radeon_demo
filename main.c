@@ -15,6 +15,7 @@
 #include "r600_reg_r6xx.h"
 
 const char cardName[] = "/dev/dri/card0";
+int debug = 1;
 FILE *fout;
 
 void printDriverInfo(int);
@@ -46,10 +47,13 @@ main (int argc, char *argv[])
 	}
 
 	/* test working CP */
-	testCP(fd, csm);
+	//testCP(fd, csm);
 
 	/* test working CP + DMA */
-	testCPDMA(fd, csm);
+	//testCPDMA(fd, csm);
+	
+	/* test 2D triangles */
+	test2DTri(fd, csm);
 
 	/* cleanup */
 	radeon_cs_manager_gem_dtor(csm);
